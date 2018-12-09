@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>聊天室</title>
+    <style type="text/css">
+        #message{
+            margin-top: 20px;
+            padding-left: 20px;
+            border: 1px solid;
+        }
+    </style>
+    <script type="text/javascript">
+        //连接对象
+        var websocket = null;
+        var name = null;
+
+        //建立连接
+        function connectWebsocket(argument) {
+
+            document.getElementById("btn1").disabled=true;
+            name = document.getElementById("name").value;
+            if (name == "") {
+                alert("请输入用户名");
+                return;
+            }
+            //先判断浏览器是否支持webscoket
+            if ("websocket" in window){
+                websocket = new WebSocket("ws://localhost:8080/websocket/"+name);
+            }else{
+                alert("浏览器不支持");
+                return false;
+            }
+            //建立连接成功的方法
+            websocket.onopen=function(event){
+                setMessage("提示：连接成功");
+            }
+            websocket.onclose=function(event){
+                setMessage("提示：连接关闭");
+            }
+            websocket.onmessage=function(event){
+                // 可以获取到后端sendtext（）传给前端的数据
+                setMessage(event.data);
+            }
+            websocket.onerror=function(event){
+                setMessage("提示：连接异常");
+            }
+        }
+        // 连接成功打印的消息
+        function setMessage(msg){
+            var message = document.getElementById('message');
+            message.innerHTML+=msg+"<br/>";
+        }
+        //发送消息
+        function send(){
+            var message = document.getElementById('text').value;
+            var pindao = document.getElementById("pindao").value;
+            var socketMsg = {message:message,toUser:pindao}
+            if (pindao ==""){
+                socketMsg.type = 0;//群聊
+            }
+            else {
+                socketMsg.type = 1;//单聊
+            }
+            // websocket.send(name+":"+message);
+            websocket.send(JSON.stringify(socketMsg));//将json对象转换为json字符串
+        }
+        function closeWebsocket() {
+            websocket.close();
+        }
+        //监听窗口关闭事件，窗口关闭，连接关闭
+        window.onbeforeunload = function () {
+            websocket.close();
+        }
+    </script>
+</head>
+<body>
+名字<input type="text" id="name">
+<button onclick="connectWebsocket()" id = "btn1">建立</button>
+<button onclick="closeWebsocket()">断开</button>
+<br>
+消息<input type="text" id="text">
+频道号<input type="text" id="pindao">
+<button onclick="send()">发送</button>
+<div id="message">
+
+</div>
+</body>
+</html>
